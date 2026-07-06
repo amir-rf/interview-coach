@@ -41,7 +41,7 @@ Three principles from the course shaped every decision:
 
 **The candidate's voice is the human-in-the-loop.** Each Q&A turn is a `RequestInput` pause/resume cycle on one ADK session — the course's HITL mechanism, repurposed so that the human input *is* the training data.
 
-**Voice is a frontend adapter, not a graph concern.** The graph is text-only — fully testable in the ADK Playground and evaluable from traces. A FastAPI frontend handles all audio through a swappable `VoiceAdapter` (`VOICE_PROVIDER=gemini|browser`): Gemini-native TTS (`gemini-2.5-flash-tts`) and multimodal STT for production quality, or the browser Web Speech API for free zero-latency development.
+**Voice is a frontend adapter, not a graph concern.** The graph is text-only — fully testable in the ADK Playground and evaluable from traces. A FastAPI frontend handles all audio through a swappable `VoiceAdapter` (`VOICE_PROVIDER=gemini|browser`): Gemini-native TTS (`gemini-3.1-flash-tts-preview`) and multimodal STT for production quality, or the browser Web Speech API for free zero-latency development.
 
 ## 3. Course Concepts Demonstrated
 
@@ -63,7 +63,7 @@ Three principles from the course shaped every decision:
 
 **Speech recognition became the measured bottleneck.** Testing with a real RF-engineering resume, browser STT mangled domain vocabulary — "C-band spectrum" became *"sebum Spectrum"*, "O-RANs" became *"orems"* — and the evaluator was partly grading the speech model instead of the candidate. This measurement, not aesthetics, motivated the Gemini-native STT provider (verbatim transcription instruction preserving filler words, since downstream nodes count them) and an evaluator instruction to treat contextually nonsensical words charitably as transcription artifacts.
 
-**Generative TTS that answers instead of reads.** Sending raw questions to `gemini-2.5-flash-tts` made it *respond* to them ("Tell me about **my** PhD research…"). Solution: a verbatim `contents=f"Say: {text}"` prefix forcing pure reading. Two further production details: browser autoplay locks solved with a synchronous `unlockVoice()` audio-context unlock on every user click, and **self-healing fallback** — any Gemini API failure at runtime swaps the adapter to browser Web Speech mid-session with a warning card, so the interview never dies.
+**Generative TTS that answers instead of reads.** Sending raw questions to `gemini-3.1-flash-tts-preview` made it *respond* to them ("Tell me about **my** PhD research…"). Solution: a verbatim `contents=f"Say: {text}"` prefix forcing pure reading. Two further production details: browser autoplay locks solved with a synchronous `unlockVoice()` audio-context unlock on every user click, and **self-healing fallback** — any Gemini API failure at runtime swaps the adapter to browser Web Speech mid-session with a warning card, so the interview never dies.
 
 ## 5. Evaluation & Quality Flywheel
 

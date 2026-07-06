@@ -1,3 +1,4 @@
+
 # Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 
 """FastAPI web server serving the polished frontend SPA for Interview Coach."""
 
@@ -244,7 +246,7 @@ async def text_to_speech(payload: dict):
 
     try:
         response = genai_client.models.generate_content(
-            model="gemini-2.5-flash-tts",
+            model="gemini-3.1-flash-tts-preview",
             contents=f"Say: {text}",
             config=types.GenerateContentConfig(
                 response_modalities=["AUDIO"],
