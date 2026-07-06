@@ -1,4 +1,3 @@
-
 # Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -52,9 +51,42 @@ from google.genai import types  # noqa: E402
 
 from app.agent import root_agent  # noqa: E402
 
-# Initialize genai client and cache
-genai_client = genai.Client()
-tts_cache = {}
+# ---------------------------------------------------------------------------
+# Gemini client for voice (TTS/STT).
+#
+# Design: the client is bound EXPLICITLY to GEMINI_API_KEY. Passing the key
+# directly makes the client immune to unrelated environment variables
+# (GOOGLE_GENAI_USE_VERTEXAI / GOOGLE_GENAI_USE_ENTERPRISE) that would
+# otherwise silently reroute requests to Vertex OAuth and fail with 401.
+#
+# If no key is configured, the client stays None: /api/config reports
+# gemini_available=false, the frontend's VoiceAdapter falls back to the
+# browser-native Web Speech API, and /api/tts + /api/stt return a clear 503
+# instead of a confusing auth error. The interview always works.
+# ---------------------------------------------------------------------------
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+genai_client: genai.Client | None = (
+    genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+)
+tts_cache: dict[str, bytes] = {}
+
+TTS_MODEL = "gemini-3.1-flash-tts-preview"
+STT_MODEL = "gemini-2.5-flash"
+TTS_VOICE = "Kore"
+
+
+def require_gemini() -> genai.Client:
+    """Return the Gemini client or raise a clear 503 so the frontend
+    VoiceAdapter can self-heal to browser-native voice."""
+    if genai_client is None:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Gemini voice is not configured (GEMINI_API_KEY missing). "
+                "Falling back to browser-native voice."
+            ),
+        )
+    return genai_client
 
 
 def pcm_to_wav(
@@ -89,7 +121,7 @@ def pcm_to_wav(
 
 app = FastAPI(title="Voice Interview Coach SPA")
 
-# Enable CORS for local testing
+# CORS wide-open on purpose: this server only runs on localhost for the demo.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -135,15 +167,23 @@ async def serve_spa():
 
 @app.get("/api/config")
 async def get_config():
-    """Returns the voice provider setting and Gemini availability."""
-    voice_provider = os.getenv("VOICE_PROVIDER", "browser")
-    # Gemini is available if API key is set OR Vertex AI is configured
-    has_api_key = bool(os.getenv("GEMINI_API_KEY"))
-    has_vertex = os.getenv("GOOGLE_GENAI_USE_VERTEXAI") == "true" and bool(
-        os.getenv("GOOGLE_CLOUD_PROJECT")
+    """Returns the voice provider setting and Gemini availability.
+
+    The frontend uses this to pick its VoiceAdapter:
+      - voice_provider=gemini AND gemini_available=true -> Gemini native voice
+      - otherwise                                        -> browser Web Speech
+    """
+    requested_provider = os.getenv("VOICE_PROVIDER", "browser")
+    gemini_available = genai_client is not None
+    # Never advertise a provider that cannot work: degrade to browser.
+    effective_provider = (
+        "gemini" if (requested_provider == "gemini" and gemini_available) else "browser"
     )
-    gemini_available = has_api_key or has_vertex
-    return {"voice_provider": voice_provider, "gemini_available": gemini_available}
+    return {
+        "voice_provider": effective_provider,
+        "requested_provider": requested_provider,
+        "gemini_available": gemini_available,
+    }
 
 
 @app.post("/api/session/start")
@@ -181,6 +221,8 @@ async def start_session(payload: SessionStartPayload):
             )
 
         return {"session_id": session.id, "first_question": first_question}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -230,13 +272,21 @@ async def submit_answer(session_id: str, payload: AnswerPayload):
             "followup": session_obj.state.get("has_followup", False),
             "score": score_entry,
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/api/tts")
 async def text_to_speech(payload: dict):
-    """Generates audio for given text using Gemini native TTS and wraps it in a WAV header."""
+    """Generates audio for given text using Gemini native TTS and wraps it in a WAV header.
+
+    Returns 503 (not 500) when Gemini is unconfigured, so the frontend's
+    self-healing adapter can swap to browser voice mid-session.
+    """
+    client = require_gemini()
+
     text = payload.get("text", "").strip()
     if not text:
         raise HTTPException(status_code=400, detail="Text payload is empty.")
@@ -245,15 +295,17 @@ async def text_to_speech(payload: dict):
         return Response(content=tts_cache[text], media_type="audio/wav")
 
     try:
-        response = genai_client.models.generate_content(
-            model="gemini-3.1-flash-tts-preview",
+        response = client.models.generate_content(
+            model=TTS_MODEL,
+            # "Say:" prefix forces verbatim reading; without it, generative TTS
+            # tries to ANSWER the question instead of asking it.
             contents=f"Say: {text}",
             config=types.GenerateContentConfig(
                 response_modalities=["AUDIO"],
                 speech_config=types.SpeechConfig(
                     voice_config=types.VoiceConfig(
                         prebuilt_voice_config=types.PrebuiltVoiceConfig(
-                            voice_name="Kore"
+                            voice_name=TTS_VOICE
                         )
                     )
                 ),
@@ -276,6 +328,8 @@ async def text_to_speech(payload: dict):
         tts_cache[text] = wav_data
 
         return Response(content=wav_data, media_type="audio/wav")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Gemini TTS generation failed: {e!s}"
@@ -284,14 +338,19 @@ async def text_to_speech(payload: dict):
 
 @app.post("/api/stt")
 async def speech_to_text(file: UploadFile = File(...)):  # noqa: B008
-    """Transcribes the uploaded audio verbatim using Gemini multimodal model."""
+    """Transcribes the uploaded audio verbatim using Gemini multimodal model.
+
+    Verbatim on purpose: downstream speech-stats node counts filler words.
+    Returns 503 when Gemini is unconfigured (frontend falls back to browser STT).
+    """
+    client = require_gemini()
+
     try:
         audio_bytes = await file.read()
         mime_type = file.content_type or "audio/webm"
 
-        # Use gemini-2.5-flash to transcribe audio verbatim
-        response = genai_client.models.generate_content(
-            model="gemini-2.5-flash",
+        response = client.models.generate_content(
+            model=STT_MODEL,
             contents=[
                 types.Part.from_bytes(data=audio_bytes, mime_type=mime_type),
                 "Provide a VERBATIM transcript of the audio. Do not clean up filler words like 'um' and 'uh'. Return only the transcript.",
@@ -299,6 +358,8 @@ async def speech_to_text(file: UploadFile = File(...)):  # noqa: B008
         )
         transcript = response.text or ""
         return {"transcript": transcript.strip()}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Gemini STT transcription failed: {e!s}"
