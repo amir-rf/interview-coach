@@ -909,6 +909,11 @@
             <!-- Active Question Screen -->
             <div class="screen" id="screen-active">
                 <div class="glass-card">
+                    <!-- Security Warning Banner -->
+                    <div id="session-security-warning" style="display: none; border-radius: 0.75rem; padding: 1rem; margin-bottom: 1.5rem; display: flex; gap: 0.75rem; align-items: center; font-weight: 500; font-size: 0.9rem; backdrop-filter: blur(12px); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);">
+                        <span id="session-warning-message" style="display: flex; align-items: center; gap: 0.75rem; width: 100%;"></span>
+                    </div>
+
                     <div class="question-card">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div class="question-meta" id="question-index-label">Question 1</div>
@@ -1406,6 +1411,36 @@
                 document.getElementById("score-feed-list").innerHTML = "";
                 document.getElementById("score-feed-section").style.display = "none";
 
+                // Setup session warning banner
+                const warningBanner = document.getElementById("session-security-warning");
+                const warningMsgText = document.getElementById("session-warning-message");
+                const hasFlags = data.security_flags && data.security_flags.length > 0;
+                const hasRedactions = data.redactions && data.redactions.length > 0;
+
+                if (hasFlags || hasRedactions) {
+                    if (hasFlags && hasRedactions) {
+                        const redactionsText = data.redactions.join(", ");
+                        warningMsgText.innerHTML = `<span style="font-size: 1.25rem;">🛡️</span><span>⚠️ Prompt injection attempt detected in resume — instructions stripped and ignored. PII redacted: <strong style="color: var(--text-primary); font-weight: 700;">${redactionsText}</strong></span>`;
+                        warningBanner.style.background = "linear-gradient(135deg, rgba(244, 63, 94, 0.08) 0%, rgba(245, 158, 11, 0.08) 100%)";
+                        warningBanner.style.borderColor = "rgba(244, 63, 94, 0.3)";
+                        warningBanner.style.color = "var(--rose)";
+                    } else if (hasFlags) {
+                        warningMsgText.innerHTML = `<span style="font-size: 1.25rem;">🛡️</span><span>⚠️ Prompt injection attempt detected in resume — instructions stripped and ignored.</span>`;
+                        warningBanner.style.background = "linear-gradient(135deg, rgba(244, 63, 94, 0.08) 0%, rgba(244, 63, 94, 0.04) 100%)";
+                        warningBanner.style.borderColor = "rgba(244, 63, 94, 0.3)";
+                        warningBanner.style.color = "var(--rose)";
+                    } else {
+                        const redactionsText = data.redactions.join(", ");
+                        warningMsgText.innerHTML = `<span style="font-size: 1.25rem;">🛡️</span><span>Notice: Personal User Information (PII) detected and redacted for safety: <strong style="color: var(--text-primary); font-weight: 700;">${redactionsText}</strong></span>`;
+                        warningBanner.style.background = "linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(245, 158, 11, 0.04) 100%)";
+                        warningBanner.style.borderColor = "rgba(245, 158, 11, 0.3)";
+                        warningBanner.style.color = "var(--amber)";
+                    }
+                    warningBanner.style.display = "flex";
+                } else {
+                    warningBanner.style.display = "none";
+                }
+
                 // Setup Question UI
                 loadQuestion(state.currentQuestion);
             } catch (e) {
@@ -1878,6 +1913,10 @@
                 fileStatus.style.display = "none";
                 resumeFile.value = "";
                 resumeInput.value = "";
+                const warningBanner = document.getElementById("session-security-warning");
+                if (warningBanner) {
+                    warningBanner.style.display = "none";
+                }
                 showScreen("setup");
             });
 

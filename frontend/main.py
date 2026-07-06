@@ -220,7 +220,18 @@ async def start_session(payload: SessionStartPayload):
                 detail="Agent failed to generate first question.",
             )
 
-        return {"session_id": session.id, "first_question": first_question}
+        session_obj = session_service.get_session_sync(
+            app_name="app", user_id="user", session_id=session.id
+        )
+        security_flags = session_obj.state.get("security_flags", [])
+        redactions = session_obj.state.get("redaction_report", [])
+
+        return {
+            "session_id": session.id,
+            "first_question": first_question,
+            "security_flags": security_flags,
+            "redactions": redactions,
+        }
     except HTTPException:
         raise
     except Exception as e:

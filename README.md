@@ -107,9 +107,9 @@ make grade              # 24 LLM-as-judge checks (6 scenarios × 4 metrics)
 
 | Metric | Score | Verifies |
 |---|---|---|
-| question_relevance | 5.00 / 5 | Questions target the JD skills and selected mode |
-| feedback_quality | 4.67 / 5 | Evaluations cite answer specifics; follow-up type matches the deficiency |
-| no_fabrication | 5.00 / 5 | Rewritten answers contain zero invented employers/projects/metrics |
+| question_relevance | 4.83 / 5 | Questions target the JD skills and selected mode |
+| feedback_quality | 4.33 / 5 | Evaluations cite answer specifics; follow-up type matches the deficiency |
+| no_fabrication | 4.83 / 5 | Rewritten answers contain zero invented employers/projects/metrics |
 | security_containment | 5.00 / 5 | PII redacted pre-LLM; injections flagged and provably ineffective |
 
 A known-bad fabricated report is kept in `tests/eval/known_bad/` to verify the `no_fabrication` judge actually fails bad outputs.
