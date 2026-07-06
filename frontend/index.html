@@ -1,0 +1,1923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Voice Interview Coach</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- PDF.js for client-side extraction -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    </script>
+    
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(17, 24, 39, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --primary: #8b5cf6;
+            --primary-glow: rgba(139, 92, 246, 0.3);
+            --emerald: #10b981;
+            --rose: #f43f5e;
+            --amber: #f59e0b;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
+        }
+
+        header {
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--card-border);
+            backdrop-filter: blur(12px);
+            z-index: 10;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 2rem;
+            height: 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--emerald));
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: white;
+            font-size: 1.2rem;
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .logo-text {
+            font-size: 1.25rem;
+            background: linear-gradient(to right, #ffffff, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .config-badge {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .config-badge .dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--emerald);
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        main {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            z-index: 5;
+        }
+
+        /* Glassmorphism Card Container */
+        .glass-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 1.25rem;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(16px);
+            transition: transform var(--transition-speed), opacity var(--transition-speed);
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Setup Screen Elements */
+        .setup-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        textarea, select, input[type="text"] {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--card-border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all var(--transition-speed);
+            width: 100%;
+        }
+
+        textarea:focus, select:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            color: white;
+            border: none;
+            border-radius: 0.75rem;
+            padding: 1rem 2rem;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: none;
+        }
+
+        /* Loading Screen Elements */
+        .loader-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 3rem 0;
+        }
+
+        .spinner {
+            width: 3.5rem;
+            height: 3.5rem;
+            border: 4px solid var(--card-border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Active Question Screen Elements */
+        .question-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--card-border);
+            border-radius: 1rem;
+            padding: 1.75rem;
+            margin-bottom: 2rem;
+            border-left: 4px solid var(--primary);
+        }
+
+        .question-meta {
+            font-size: 0.8rem;
+            color: var(--primary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .question-text {
+            font-size: 1.15rem;
+            line-height: 1.6;
+        }
+
+        .voice-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            margin: 2.5rem 0;
+        }
+
+        .mic-btn-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mic-btn {
+            width: 5rem;
+            height: 5rem;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), #6d28d9);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.75rem;
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+            z-index: 2;
+            transition: all 0.3s;
+        }
+
+        .mic-btn.recording {
+            background: var(--rose);
+            box-shadow: 0 8px 25px rgba(244, 63, 94, 0.4);
+        }
+
+        .pulse-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+            opacity: 0;
+            z-index: 1;
+            pointer-events: none;
+            transition: all 0.3s;
+        }
+
+        .mic-btn.recording ~ .pulse-ring {
+            animation: pulse 1.5s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+            border-color: var(--rose);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.6;
+            }
+            100% {
+                transform: scale(1.6);
+                opacity: 0;
+            }
+        }
+
+        .interim-transcript {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            font-style: italic;
+            text-align: center;
+            min-height: 2.5rem;
+            width: 100%;
+            max-width: 600px;
+            padding: 0 1rem;
+        }
+
+        .fallback-input {
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        /* Score Feed Elements */
+        .score-feed-section {
+            margin-top: 3rem;
+            border-top: 1px solid var(--card-border);
+            padding-top: 2rem;
+        }
+
+        .score-feed-title {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .score-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--card-border);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            animation: slideIn 0.4s ease-out forwards;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .score-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .score-tag {
+            font-size: 0.8rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-weight: 600;
+        }
+
+        .score-tag.high {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--emerald);
+        }
+
+        .score-tag.med {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--amber);
+        }
+
+        .score-tag.low {
+            background: rgba(244, 63, 94, 0.1);
+            color: var(--rose);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 0.75rem;
+            font-size: 0.8rem;
+        }
+
+        .metric-bar-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-secondary);
+        }
+
+        .metric-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+
+        .metric-fill {
+            height: 100%;
+            border-radius: 9999px;
+            background: var(--primary);
+        }
+
+        /* Final Scorecard Screen Elements */
+        .scorecard-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .overall-badge {
+            width: 10rem;
+            height: 10rem;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.25) 0%, transparent 75%);
+            border: 5px solid var(--primary);
+            border-top-color: var(--emerald);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 35px var(--primary-glow);
+            animation: pulseGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            0% {
+                box-shadow: 0 0 20px var(--primary-glow);
+            }
+            100% {
+                box-shadow: 0 0 45px rgba(139, 92, 246, 0.5);
+            }
+        }
+
+        .overall-score-num {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: white;
+            line-height: 1;
+            font-family: 'Outfit', sans-serif;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        .overall-score-max {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .scorecard-section {
+            margin-bottom: 2.5rem;
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 1rem;
+            padding: 1.75rem;
+        }
+
+        .scorecard-section h3 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--primary);
+            padding-left: 0.75rem;
+            color: #ffffff;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 640px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .list-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--card-border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .list-card.strong {
+            border-left: 4px solid var(--emerald);
+            background: linear-gradient(to right, rgba(16, 185, 129, 0.02), transparent);
+        }
+
+        .list-card.weak {
+            border-left: 4px solid var(--rose);
+            background: linear-gradient(to right, rgba(244, 63, 94, 0.02), transparent);
+        }
+
+        .list-card ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .list-card li {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .list-card.strong li::before {
+            content: "✓";
+            color: var(--emerald);
+            font-weight: 700;
+        }
+
+        .list-card.weak li::before {
+            content: "✗";
+            color: var(--rose);
+            font-weight: 700;
+        }
+
+        .rewritten-answers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .rewritten-item {
+            background: rgba(255, 255, 255, 0.015);
+            border: 1px solid var(--card-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            transition: border-color 0.3s;
+        }
+
+        .rewritten-item:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .rewritten-q {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            color: #ffffff;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 0.5rem;
+        }
+
+        .rewritten-comparison {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .rewritten-comparison {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .rewritten-actual, .rewritten-suggested {
+            border-radius: 0.75rem;
+            padding: 1rem;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .rewritten-actual {
+            background: rgba(244, 63, 94, 0.03);
+            border: 1px solid rgba(244, 63, 94, 0.15);
+            border-left: 4px solid var(--rose);
+            color: var(--text-secondary);
+        }
+
+        .rewritten-suggested {
+            background: rgba(16, 185, 129, 0.04);
+            border: 1px solid rgba(16, 185, 129, 0.15);
+            border-left: 4px solid var(--emerald);
+            color: var(--text-primary);
+        }
+
+        .rewritten-suggested mark {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--emerald);
+            border-bottom: 1px dashed var(--emerald);
+            padding: 0 0.2rem;
+            border-radius: 0.2rem;
+        }
+
+        .skills-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .skill-badge {
+            background: rgba(244, 63, 94, 0.1);
+            color: var(--rose);
+            border: 1px solid rgba(244, 63, 94, 0.2);
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .injection-warning-card {
+            background: rgba(244, 63, 94, 0.1);
+            border: 1px solid var(--rose);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            color: var(--rose);
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .executive-summary-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.005) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-left: 5px solid var(--primary);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            line-height: 1.7;
+            font-size: 0.95rem;
+            color: #e5e7eb;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+
+        .practice-step-card {
+            background: rgba(139, 92, 246, 0.02);
+            border: 1px solid rgba(139, 92, 246, 0.1);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            transition: transform 0.3s;
+        }
+
+        .practice-step-card:hover {
+            transform: translateX(4px);
+            border-color: rgba(139, 92, 246, 0.25);
+        }
+
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+
+        .summary-table th, .summary-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .summary-table th {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .summary-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.015);
+        }
+
+        .summary-table td {
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .summary-table .q-text {
+            font-weight: 500;
+            color: #ffffff;
+        }
+
+        .summary-table .score-cell {
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--card-border);
+        }
+
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .toggle-switch {
+            width: 2.25rem;
+            height: 1.25rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 9999px;
+            position: relative;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch::after {
+            content: "";
+            width: 0.9rem;
+            height: 0.9rem;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 0.175rem;
+            left: 0.175rem;
+            transition: transform 0.3s;
+        }
+
+        .toggle-container.active .toggle-switch {
+            background: var(--primary);
+        }
+
+        .toggle-container.active .toggle-switch::after {
+            transform: translateX(1rem);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <div class="logo-icon">🎙️</div>
+            <div class="logo-text">AI Voice Interview Coach</div>
+        </div>
+        <div class="config-badge" id="voice-provider-badge">
+            <span class="dot"></span> Voice Provider: browser
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            
+            <!-- Setup Screen -->
+            <div class="screen active" id="screen-setup">
+                <div class="glass-card">
+                    <h2>Mock Interview Setup</h2>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 0.5rem;">
+                        Upload details to generate your tailored senior interview session.
+                    </p>
+                    
+                    <div class="setup-grid">
+                        <div class="form-group">
+                            <label>Resume Upload or Paste</label>
+                            
+                            <!-- Tab controls -->
+                            <div class="tab-container" style="display: flex; gap: 0.5rem; margin: 0.5rem 0 0.75rem 0;">
+                                <button type="button" class="btn btn-secondary tab-btn active" id="tab-upload" style="padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 0.5rem; cursor: pointer;">📁 File Upload</button>
+                                <button type="button" class="btn btn-secondary tab-btn" id="tab-paste" style="padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 0.5rem; cursor: pointer; background: transparent; border-color: transparent; color: var(--text-secondary);">📝 Copy & Paste</button>
+                            </div>
+
+                            <!-- File drag/drop area -->
+                            <div id="upload-zone" style="border: 2px dashed rgba(255, 255, 255, 0.15); border-radius: 0.75rem; padding: 2.25rem 1.5rem; text-align: center; background: rgba(255,255,255,0.01); transition: all 0.3s; cursor: pointer; display: block;">
+                                <div style="font-size: 2.25rem; margin-bottom: 0.5rem;">📄</div>
+                                <div style="font-weight: 600; font-size: 0.95rem; font-family: 'Outfit', sans-serif;">Drag & drop your resume file here, or <span style="color: var(--primary); text-decoration: underline;">browse</span></div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">Supports PDF and TXT formats</div>
+                                <input type="file" id="resume-file" accept=".pdf,.txt" style="display: none;">
+                                <div id="file-status" style="margin-top: 1rem; font-size: 0.85rem; display: none; align-items: center; justify-content: center; gap: 0.5rem; color: var(--emerald); font-weight: 500;">
+                                    <span style="background-color: var(--emerald); width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span>
+                                    <span id="file-name-display">resume.pdf</span>
+                                </div>
+                            </div>
+
+                            <!-- Paste text area -->
+                            <div id="paste-zone" style="display: none;">
+                                <textarea id="resume-input" rows="6" placeholder="Paste your resume contents here..."></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="jd-input">Job Description</label>
+                            <textarea id="jd-input" rows="6" placeholder="Paste target job description..."></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="mode-select">Interview Mode</label>
+                            <select id="mode-select">
+                                <option value="behavioral">Behavioral (STAR technique focus)</option>
+                                <option value="technical">Technical (System Design & Code optimization)</option>
+                                <option value="mixed">Mixed (General evaluation)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="voice-select">Voice & STT Engine</label>
+                            <select id="voice-select">
+                                <option value="browser">Browser Native (Web Speech API)</option>
+                                <option value="gemini">Gemini Multimodal API (Low-latency TTS/STT)</option>
+                            </select>
+                            
+                            <div class="api-warning-card" id="setup-api-warning" style="display: none; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); color: #f87171; padding: 1rem; border-radius: 0.75rem; font-size: 0.85rem; line-height: 1.5; margin-top: 0.75rem;">
+                                ⚠️ <strong>Gemini API Unavailable</strong>: The voice engine could not connect to the Gemini service.
+                                <br>To enable, add your API key to the <code style="font-family: monospace; background: rgba(0,0,0,0.3); padding: 0.15rem 0.35rem; border-radius: 0.25rem;">.env</code> file in the project root:
+                                <pre style="background: rgba(0,0,0,0.45); padding: 0.5rem; border-radius: 0.35rem; margin-top: 0.5rem; font-family: monospace; font-size: 0.8rem; overflow-x: auto; color: #ffffff;">GEMINI_API_KEY=your_key_here</pre>
+                                <em>We have automatically reverted your choice to Browser Native voiceover.</em>
+                            </div>
+                        </div>
+                        
+                        <button class="btn" id="btn-start" style="margin-top: 1rem;">
+                            🚀 Start Interview
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Screen -->
+            <div class="screen" id="screen-loading">
+                <div class="glass-card">
+                    <div class="loader-container">
+                        <div class="spinner"></div>
+                        <h3 id="loader-title">Analyzing details...</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;" id="loader-desc">
+                            Preparing tailored custom interview questions based on targets.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Question Screen -->
+            <div class="screen" id="screen-active">
+                <div class="glass-card">
+                    <div class="question-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="question-meta" id="question-index-label">Question 1</div>
+                            <div id="voice-status-indicator" style="font-size: 0.8rem; font-weight: 500; color: var(--primary); display: flex; align-items: center; gap: 0.35rem;"></div>
+                        </div>
+                        <div class="question-text" id="active-question-display">
+                            Initializing question prompt...
+                        </div>
+                    </div>
+
+                    <div class="voice-section">
+                        <div class="mic-btn-container">
+                            <button class="mic-btn" id="btn-mic">🎙️</button>
+                            <div class="pulse-ring"></div>
+                        </div>
+                        <div class="interim-transcript" id="transcript-display">
+                            Tap microphone to speak your answer, or type in the fallback box below.
+                        </div>
+                    </div>
+
+                    <div class="fallback-input form-group">
+                        <label for="typed-answer">Your Answer</label>
+                        <textarea id="typed-answer" rows="4" placeholder="Speak your answer, or type it here directly..."></textarea>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem;">
+                        <div class="audio-controls">
+                            <div class="toggle-container active" id="toggle-voice-out">
+                                <div class="toggle-switch"></div>
+                                <span>Voice Output (TTS)</span>
+                            </div>
+                        </div>
+                        
+                        <button class="btn" id="btn-submit">
+                            📤 Submit Answer
+                        </button>
+                    </div>
+
+                    <!-- Real-Time Score Feed -->
+                    <div class="score-feed-section" id="score-feed-section" style="display: none;">
+                        <div class="score-feed-title">🎯 Answer Score Feed</div>
+                        <div id="score-feed-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scorecard Results Screen -->
+            <div class="screen" id="screen-scorecard">
+                <div class="glass-card">
+                    
+                    <div class="injection-warning-card" id="injection-warning" style="display: none;">
+                        ⚠️ Warning: Prompt injection attempt detected in inputs and ignored!
+                    </div>
+
+                    <div class="scorecard-header">
+                        <h2>Interview Assessment Completed</h2>
+                        <div class="overall-badge">
+                            <span class="overall-score-num" id="scorecard-overall-score">0.0</span>
+                            <span class="overall-score-max">/ 5.0</span>
+                        </div>
+                    </div>
+
+                    <div class="scorecard-section">
+                        <h3>Executive Summary</h3>
+                        <div class="executive-summary-card" id="scorecard-summary"></div>
+                    </div>
+
+                    <div class="scorecard-section" id="scorecard-table-section" style="display: block;">
+                        <h3>Performance Scorecard Summary</h3>
+                        
+                        <!-- Table 1: Question & Answer Log -->
+                        <h4 style="margin-top: 1rem; margin-bottom: 0.5rem; font-size: 0.95rem; color: var(--text-secondary);">1. Question & Answer Log</h4>
+                        <div style="overflow-x: auto; margin-bottom: 1.5rem;">
+                            <table class="summary-table" style="margin-bottom: 1rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 60px;">Turn</th>
+                                        <th>Question</th>
+                                        <th>Your Response</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="scorecard-log-table-body">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Table 2: Rubric Breakdown -->
+                        <h4 style="margin-top: 1rem; margin-bottom: 0.5rem; font-size: 0.95rem; color: var(--text-secondary);">2. Rubric Scores Breakdown</h4>
+                        <div style="overflow-x: auto;">
+                            <table class="summary-table" style="margin-top: 0; margin-bottom: 1rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 60px;">Turn</th>
+                                        <th style="text-align: center;">Content</th>
+                                        <th style="text-align: center;">Technical</th>
+                                        <th style="text-align: center;">STAR</th>
+                                        <th style="text-align: center;">Relevance</th>
+                                        <th style="text-align: center;">Conciseness</th>
+                                        <th style="text-align: right; width: 80px;">Avg</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="scorecard-rubric-table-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="scorecard-section comparison-grid">
+                        <div class="list-card strong">
+                            <h4 style="margin-bottom: 0.75rem; color: var(--emerald);">Strong Areas</h4>
+                            <ul id="scorecard-strong-list"></ul>
+                        </div>
+                        <div class="list-card weak">
+                            <h4 style="margin-bottom: 0.75rem; color: var(--rose);">Weak Areas</h4>
+                            <ul id="scorecard-weak-list"></ul>
+                        </div>
+                    </div>
+
+                    <div class="scorecard-section">
+                        <h3>Missing Required Skills</h3>
+                        <div class="skills-container" id="scorecard-skills-container"></div>
+                    </div>
+
+                    <div class="scorecard-section">
+                        <h3>Rewritten Answers</h3>
+                        <div class="rewritten-answers-list" id="scorecard-rewritten-list"></div>
+                    </div>
+
+                    <div class="scorecard-section">
+                        <h3>Next Practice Plan</h3>
+                        <div id="scorecard-practice-plan"></div>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 3rem;">
+                        <button class="btn btn-secondary" id="btn-restart">
+                            🔄 Start New Session
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <footer>
+        AI Voice Interview Coach &bull; Powered by ADK Workflows
+    </footer>
+
+    <!-- Script Layer -->
+    <script>
+        // --- 1. VOICE LAYER ADAPTERS ---
+        class VoiceAdapter {
+            async speak(text) { throw new Error("Method unimplemented"); }
+            startListening(onResult, onEnd) { throw new Error("Method unimplemented"); }
+            stopListening() { throw new Error("Method unimplemented"); }
+        }
+
+        class BrowserVoiceAdapter extends VoiceAdapter {
+            constructor() {
+                super();
+                this.recognition = null;
+                this.synth = window.speechSynthesis;
+            }
+
+            async speak(text) {
+                return new Promise((resolve) => {
+                    this.synth.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    
+                    const indicator = document.getElementById("voice-status-indicator");
+                    if (indicator) {
+                        indicator.innerHTML = `🎙️ Speaking...`;
+                    }
+                    
+                    utterance.onend = () => resolve();
+                    utterance.onerror = () => resolve();
+                    this.synth.speak(utterance);
+                });
+            }
+
+            cancel() {
+                this.synth.cancel();
+            }
+
+            startListening(onResult, onEnd) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                    alert("Your browser does not support Speech Recognition. Fall back to manual typing.");
+                    return;
+                }
+                this.recognition = new SpeechRecognition();
+                this.recognition.continuous = true;
+                this.recognition.interimResults = true;
+                this.recognition.lang = "en-US";
+
+                let finalTranscript = "";
+
+                this.recognition.onresult = (event) => {
+                    let interimTranscript = "";
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        if (event.results[i].isFinal) {
+                            finalTranscript += event.results[i][0].transcript + " ";
+                        } else {
+                            interimTranscript += event.results[i][0].transcript;
+                        }
+                    }
+                    onResult((finalTranscript + interimTranscript).trim());
+                };
+
+                this.recognition.onend = () => {
+                    onEnd(finalTranscript.trim());
+                };
+
+                this.recognition.start();
+            }
+
+            stopListening() {
+                if (this.recognition) {
+                    this.recognition.stop();
+                }
+            }
+        }
+
+        class GeminiVoiceAdapter extends VoiceAdapter {
+            constructor() {
+                super();
+                this.activeAudio = null;
+                this.mediaRecorder = null;
+                this.chunks = [];
+                this.stream = null;
+            }
+
+            async speak(text) {
+                console.log("[GeminiVoiceAdapter] TTS speak: " + text);
+                this.cancel();
+                
+                try {
+                    const res = await fetch("/api/tts", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ text })
+                    });
+                    if (!res.ok) {
+                        throw new Error("TTS request failed");
+                    }
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const audio = new Audio(url);
+                    this.activeAudio = audio;
+                    
+                    const indicator = document.getElementById("voice-status-indicator");
+                    if (indicator) {
+                        indicator.innerHTML = `🎙️ Speaking...`;
+                    }
+                    
+                    return new Promise((resolve) => {
+                        audio.onended = () => {
+                            URL.revokeObjectURL(url);
+                            if (this.activeAudio === audio) {
+                                this.activeAudio = null;
+                            }
+                            resolve();
+                        };
+                        audio.onerror = () => {
+                            URL.revokeObjectURL(url);
+                            if (this.activeAudio === audio) {
+                                this.activeAudio = null;
+                            }
+                            resolve();
+                        };
+                        audio.play().catch((e) => {
+                            console.error("Audio play failed:", e);
+                            resolve();
+                        });
+                    });
+                } catch (e) {
+                    console.error("Gemini TTS Error: ", e);
+                    handleGeminiFallback(e.message);
+                    // Fall back to browser TTS if backend fails
+                    return new Promise((resolve) => {
+                        const utterance = new SpeechSynthesisUtterance(text);
+                        utterance.onend = () => resolve();
+                        utterance.onerror = () => resolve();
+                        window.speechSynthesis.speak(utterance);
+                    });
+                }
+            }
+
+            cancel() {
+                if (this.activeAudio) {
+                    this.activeAudio.pause();
+                    this.activeAudio = null;
+                }
+                window.speechSynthesis.cancel();
+            }
+
+            startListening(onResult, onEnd) {
+                console.log("[GeminiVoiceAdapter] STT listening initiated");
+                this.chunks = [];
+                
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then((stream) => {
+                        this.stream = stream;
+                        this.mediaRecorder = new MediaRecorder(stream);
+                        this.mediaRecorder.ondataavailable = (e) => {
+                            if (e.data.size > 0) {
+                                this.chunks.push(e.data);
+                            }
+                        };
+                        this.mediaRecorder.onstop = async () => {
+                            const audioBlob = new Blob(this.chunks, { type: "audio/webm" });
+                            const formData = new FormData();
+                            formData.append("file", audioBlob, "recording.webm");
+                            
+                            onResult("Transcribing answer...");
+                            try {
+                                const res = await fetch("/api/stt", {
+                                    method: "POST",
+                                    body: formData
+                                });
+                                if (!res.ok) {
+                                    throw new Error("Transcription request failed");
+                                }
+                                const data = await res.json();
+                                onEnd(data.transcript || "");
+                            } catch (err) {
+                                console.error(err);
+                                handleGeminiFallback(err.message);
+                                onEnd("[Error transcribing audio. Please type your answer instead.]");
+                            }
+                            
+                            // Stop track tracks
+                            if (this.stream) {
+                                this.stream.getTracks().forEach(track => track.stop());
+                                this.stream = null;
+                            }
+                        };
+                        this.mediaRecorder.start();
+                        onResult("Listening...");
+                    })
+                    .catch((err) => {
+                        console.error("Microphone access failed:", err);
+                        alert("Could not access microphone: " + err.message);
+                        onEnd("");
+                    });
+            }
+
+            stopListening() {
+                if (this.mediaRecorder && this.mediaRecorder.state !== "inactive") {
+                    this.mediaRecorder.stop();
+                }
+            }
+        }
+
+        // --- 2. FRONTEND STATE & APP LOGIC ---
+        let state = {
+            voiceProvider: "browser",
+            geminiAvailable: false,
+            voiceAdapter: new BrowserVoiceAdapter(),
+            sessionId: null,
+            currentQuestion: null,
+            questionIndex: 1,
+            isRecording: false,
+            voiceOutputEnabled: true,
+            scoreFeed: []
+        };
+
+        // UI DOM bindings
+        const screens = {
+            setup: document.getElementById("screen-setup"),
+            loading: document.getElementById("screen-loading"),
+            active: document.getElementById("screen-active"),
+            scorecard: document.getElementById("screen-scorecard")
+        };
+
+        function showScreen(screenKey) {
+            Object.keys(screens).forEach(key => {
+                if (key === screenKey) {
+                    screens[key].classList.add("active");
+                } else {
+                    screens[key].classList.remove("active");
+                }
+            });
+        }
+
+        // Initialize Config
+        async function initConfig() {
+            try {
+                const response = await fetch("/api/config");
+                const config = await response.json();
+                state.geminiAvailable = config.gemini_available;
+                
+                // If backend defaults to gemini but it's unavailable, fallback immediately
+                if (config.voice_provider === "gemini" && !state.geminiAvailable) {
+                    state.voiceProvider = "browser";
+                    document.getElementById("setup-api-warning").style.display = "block";
+                } else {
+                    state.voiceProvider = config.voice_provider;
+                }
+                
+                document.getElementById("voice-select").value = state.voiceProvider;
+                updateVoiceBadge();
+
+                if (state.voiceProvider === "gemini") {
+                    state.voiceAdapter = new GeminiVoiceAdapter();
+                } else {
+                    state.voiceAdapter = new BrowserVoiceAdapter();
+                }
+            } catch (e) {
+                console.error("Config fetch failed, defaulting to browser.", e);
+            }
+        }
+
+        function updateVoiceBadge() {
+            const badge = document.getElementById("voice-provider-badge");
+            if (badge) {
+                badge.innerHTML = `<span class="dot"></span> Voice Provider: ${state.voiceProvider}`;
+            }
+        }
+
+        function handleGeminiFallback(errorMessage) {
+            console.error("Gemini Voice engine failed: ", errorMessage);
+            const apiWarning = document.getElementById("setup-api-warning");
+            if (apiWarning) {
+                apiWarning.style.display = "block";
+            }
+            const voiceSelect = document.getElementById("voice-select");
+            if (voiceSelect) {
+                voiceSelect.value = "browser";
+            }
+            state.voiceProvider = "browser";
+            state.voiceAdapter = new BrowserVoiceAdapter();
+            updateVoiceBadge();
+        }
+
+        // Trigger TTS
+        async function speakQuestion(text) {
+            if (state.voiceOutputEnabled) {
+                const indicator = document.getElementById("voice-status-indicator");
+                if (indicator) {
+                    indicator.innerHTML = `⏳ Generating voiceover...`;
+                }
+                
+                try {
+                    await state.voiceAdapter.speak(text);
+                } finally {
+                    if (indicator) {
+                        indicator.innerHTML = "";
+                    }
+                }
+            }
+        }
+
+        function unlockVoice() {
+            if (window.speechSynthesis) {
+                const u = new SpeechSynthesisUtterance("");
+                u.volume = 0;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        // Start Interview
+        async function startInterview() {
+            unlockVoice();
+            const resumeText = document.getElementById("resume-input").value.trim();
+            const jobDescription = document.getElementById("jd-input").value.trim();
+            const mode = document.getElementById("mode-select").value;
+
+            if (!resumeText || !jobDescription) {
+                alert("Please paste both your resume and job description.");
+                return;
+            }
+
+            showScreen("loading");
+            document.getElementById("loader-title").textContent = "Creating Interview Plan...";
+            document.getElementById("loader-desc").textContent = "Parsing profile, matching skills, and designing custom questions.";
+
+            try {
+                const res = await fetch("/api/session/start", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ resume_text: resumeText, job_description: jobDescription, mode })
+                });
+
+                if (!res.ok) {
+                    throw new Error("Failed to start session. Check logs.");
+                }
+
+                const data = await res.json();
+                state.sessionId = data.session_id;
+                state.currentQuestion = data.first_question;
+                state.questionIndex = 1;
+                state.scoreFeed = [];
+                document.getElementById("score-feed-list").innerHTML = "";
+                document.getElementById("score-feed-section").style.display = "none";
+
+                // Setup Question UI
+                loadQuestion(state.currentQuestion);
+            } catch (e) {
+                alert(e.message);
+                showScreen("setup");
+            }
+        }
+
+        function loadQuestion(questionText) {
+            document.getElementById("active-question-display").textContent = questionText;
+            document.getElementById("question-index-label").textContent = `Question ${state.questionIndex}`;
+            document.getElementById("typed-answer").value = "";
+            document.getElementById("transcript-display").textContent = "Tap microphone to speak your answer, or type below.";
+            showScreen("active");
+
+            // Speak question asynchronously
+            speakQuestion(questionText);
+        }
+
+        // Handle Audio Recording
+        function toggleRecording() {
+            unlockVoice();
+            const micBtn = document.getElementById("btn-mic");
+            const transcriptDisplay = document.getElementById("transcript-display");
+            const typedAnswer = document.getElementById("typed-answer");
+
+            if (state.isRecording) {
+                // Stop Recording
+                state.isRecording = false;
+                micBtn.classList.remove("recording");
+                state.voiceAdapter.stopListening();
+            } else {
+                // Start Recording
+                state.isRecording = true;
+                micBtn.classList.add("recording");
+                transcriptDisplay.textContent = "Listening... Speak now.";
+                
+                state.voiceAdapter.startListening(
+                    (liveResult) => {
+                        transcriptDisplay.textContent = liveResult;
+                        typedAnswer.value = liveResult;
+                    },
+                    (finalResult) => {
+                        transcriptDisplay.textContent = "Recording ended.";
+                        typedAnswer.value = finalResult;
+                        state.isRecording = false;
+                        micBtn.classList.remove("recording");
+                    }
+                );
+            }
+        }
+
+        // Submit Answer
+        async function submitAnswer() {
+            unlockVoice();
+            // Stop recording if active
+            if (state.isRecording) {
+                toggleRecording();
+            }
+
+            const answerText = document.getElementById("typed-answer").value.trim();
+            if (!answerText) {
+                alert("Please record or type an answer before submitting.");
+                return;
+            }
+
+            showScreen("loading");
+            document.getElementById("loader-title").textContent = "Evaluating Answer...";
+            document.getElementById("loader-desc").textContent = "Analyzing structure, technical depth, and relevance to the job description.";
+
+            try {
+                const res = await fetch(`/api/session/${state.sessionId}/answer`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ transcript: answerText })
+                });
+
+                if (!res.ok) {
+                    throw new Error("Evaluation submission failed.");
+                }
+
+                const data = await res.json();
+                
+                // Add Score to Real-time Score Feed
+                if (data.score) {
+                    state.scoreFeed.push({
+                        question: state.currentQuestion,
+                        answer: answerText,
+                        score: data.score
+                    });
+                    renderScoreFeed();
+                }
+
+                if (data.report) {
+                    // Done! Show final scorecard
+                    renderScorecard(data.report);
+                } else {
+                    // Next Question (could be follow-up or next main question)
+                    state.currentQuestion = data.question;
+                    state.questionIndex++;
+                    loadQuestion(state.currentQuestion);
+                }
+
+            } catch (e) {
+                alert(e.message);
+                showScreen("active");
+            }
+        }
+
+        // Render Real-time Score Feed
+        function renderScoreFeed() {
+            const feedSection = document.getElementById("score-feed-section");
+            const feedList = document.getElementById("score-feed-list");
+            
+            feedSection.style.display = "block";
+            feedList.innerHTML = "";
+
+            state.scoreFeed.forEach((item, index) => {
+                const rates = item.score;
+                // Calculate average of the 1-5 scores
+                const content = rates.content_quality?.score || 3;
+                const technical = rates.technical_correctness?.score || 3;
+                const conciseness = rates.conciseness?.score || 3;
+                const star = rates.star_structure?.score || 3;
+                const jd = rates.jd_relevance?.score || 3;
+                const avgScore = ((content + technical + conciseness + star + jd) / 5).toFixed(1);
+
+                let level = "med";
+                if (avgScore >= 4.0) level = "high";
+                if (avgScore < 2.5) level = "low";
+
+                const card = document.createElement("div");
+                card.className = "score-card";
+                card.innerHTML = `
+                    <div class="score-row">
+                        <strong style="font-size: 0.9rem;">Turn ${index + 1} Evaluation</strong>
+                        <span class="score-tag ${level}">Score: ${avgScore} / 5.0</span>
+                    </div>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                        Q: "${item.question.substring(0, 80)}..."
+                    </p>
+                    <div class="metrics-grid">
+                        ${renderMetricBar("Content Quality", content)}
+                        ${renderMetricBar("Technical depth", technical)}
+                        ${renderMetricBar("STAR Structure", star)}
+                        ${renderMetricBar("Relevance", jd)}
+                    </div>
+                `;
+                feedList.appendChild(card);
+            });
+        }
+
+        function renderMetricBar(name, score) {
+            const pct = (score / 5) * 100;
+            return `
+                <div class="metric-bar-container">
+                    <div class="metric-header">
+                        <span>${name}</span>
+                        <span>${score}/5</span>
+                    </div>
+                    <div class="metric-bar">
+                        <div class="metric-fill" style="width: ${pct}%;"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render Final scorecard
+        function renderScorecard(report) {
+            // Stop any ongoing voice output immediately
+            window.speechSynthesis.cancel();
+
+            // Show warning if prompt injection warning was flagged
+            const warningCard = document.getElementById("injection-warning");
+            if (report.security_warning) {
+                warningCard.style.display = "flex";
+                warningCard.textContent = "⚠️ " + report.security_warning;
+            } else {
+                warningCard.style.display = "none";
+            }
+
+            // Set Overall Score
+            document.getElementById("scorecard-overall-score").textContent = report.overall_score.toFixed(1);
+
+            // Set Summary
+            document.getElementById("scorecard-summary").textContent = report.executive_summary;
+
+            // Set Summary Tables (Log and Rubric Breakdown)
+            const logTableBody = document.getElementById("scorecard-log-table-body");
+            const rubricTableBody = document.getElementById("scorecard-rubric-table-body");
+            
+            logTableBody.innerHTML = "";
+            rubricTableBody.innerHTML = "";
+            
+            if (state.scoreFeed && state.scoreFeed.length > 0) {
+                state.scoreFeed.forEach((item, index) => {
+                    const rates = item.score;
+                    const content = rates.content_quality?.score || 3;
+                    const technical = rates.technical_correctness?.score || 3;
+                    const conciseness = rates.conciseness?.score || 3;
+                    const star = rates.star_structure?.score || 3;
+                    const jd = rates.jd_relevance?.score || 3;
+                    const avgScore = ((content + technical + conciseness + star + jd) / 5).toFixed(1);
+
+                    let badgeColor = "var(--primary)";
+                    if (avgScore >= 4.0) badgeColor = "var(--emerald)";
+                    if (avgScore < 2.5) badgeColor = "var(--rose)";
+
+                    // 1. Q&A Log row
+                    const trLog = document.createElement("tr");
+                    trLog.innerHTML = `
+                        <td style="font-weight: 600; color: var(--text-secondary); vertical-align: top;">#${index + 1}</td>
+                        <td class="q-text" style="font-size: 0.85rem; font-weight: 600; color: #ffffff; white-space: normal; vertical-align: top; line-height: 1.5; padding-bottom: 1rem;">${item.question}</td>
+                        <td style="color: var(--text-secondary); font-size: 0.85rem; white-space: normal; vertical-align: top; line-height: 1.5; padding-bottom: 1rem;">"${item.answer}"</td>
+                    `;
+                    logTableBody.appendChild(trLog);
+
+                    // 2. Rubric Breakdown row
+                    const trRubric = document.createElement("tr");
+                    trRubric.innerHTML = `
+                        <td style="font-weight: 600; color: var(--text-secondary);">#${index + 1}</td>
+                        <td style="text-align: center; font-weight: 600; font-size: 0.95rem;">${content}</td>
+                        <td style="text-align: center; font-weight: 600; font-size: 0.95rem;">${technical}</td>
+                        <td style="text-align: center; font-weight: 600; font-size: 0.95rem;">${star}</td>
+                        <td style="text-align: center; font-weight: 600; font-size: 0.95rem;">${jd}</td>
+                        <td style="text-align: center; font-weight: 600; font-size: 0.95rem;">${conciseness}</td>
+                        <td class="score-cell" style="text-align: right; color: ${badgeColor}; font-weight: 700; font-size: 0.95rem;">
+                            ${avgScore}
+                        </td>
+                    `;
+                    rubricTableBody.appendChild(trRubric);
+                });
+                document.getElementById("scorecard-table-section").style.display = "block";
+            } else {
+                document.getElementById("scorecard-table-section").style.display = "none";
+            }
+
+            // Set Strong Areas
+            const strongList = document.getElementById("scorecard-strong-list");
+            strongList.innerHTML = "";
+            if (report.strong_answers && report.strong_answers.length > 0) {
+                report.strong_answers.forEach(item => {
+                    const li = document.createElement("li");
+                    li.textContent = item;
+                    strongList.appendChild(li);
+                });
+            } else {
+                strongList.innerHTML = "<li>No strong responses highlighted.</li>";
+            }
+
+            // Set Weak Areas
+            const weakList = document.getElementById("scorecard-weak-list");
+            weakList.innerHTML = "";
+            if (report.weak_answers && report.weak_answers.length > 0) {
+                report.weak_answers.forEach(item => {
+                    const li = document.createElement("li");
+                    li.textContent = item;
+                    weakList.appendChild(li);
+                });
+            } else {
+                weakList.innerHTML = "<li>No specific weak responses highlighted.</li>";
+            }
+
+            // Set Missing Skills
+            const skillsContainer = document.getElementById("scorecard-skills-container");
+            skillsContainer.innerHTML = "";
+            if (report.missing_skills && report.missing_skills.length > 0) {
+                report.missing_skills.forEach(skill => {
+                    const badge = document.createElement("span");
+                    badge.className = "skill-badge";
+                    badge.textContent = skill;
+                    skillsContainer.appendChild(badge);
+                });
+            } else {
+                skillsContainer.innerHTML = "<span class='text-secondary'>No critical skill gaps identified.</span>";
+            }
+
+            // Set Rewritten Answers
+            const rewrittenList = document.getElementById("scorecard-rewritten-list");
+            rewrittenList.innerHTML = "";
+            if (report.rewritten_answers && report.rewritten_answers.length > 0) {
+                report.rewritten_answers.forEach((item, idx) => {
+                    const div = document.createElement("div");
+                    div.className = "rewritten-item";
+
+                    // Parse brackets into mark tags to highlight fill-in blanks
+                    let suggested = item.rewritten_answer || "";
+                    suggested = suggested.replace(/\[([^\]]+)\]/g, "<mark>[$1]</mark>");
+
+                    div.innerHTML = `
+                        <div class="rewritten-q">Q${idx + 1}: ${item.question}</div>
+                        <div class="rewritten-comparison">
+                            <div class="rewritten-actual">
+                                <strong>Actual Answer:</strong> "${item.actual_answer}"
+                            </div>
+                            <div class="rewritten-suggested">
+                                <strong>Restructured:</strong> ${suggested}
+                            </div>
+                        </div>
+                    `;
+                    rewrittenList.appendChild(div);
+                });
+            } else {
+                rewrittenList.innerHTML = "<p class='text-secondary'>No rewritten answers available.</p>";
+            }
+
+            // Set Practice Plan
+            const planContainer = document.getElementById("scorecard-practice-plan");
+            planContainer.innerHTML = "";
+            const planText = report.next_practice_plan || "";
+            const paragraphs = planText.split(/\n+/).filter(p => p.trim());
+            if (paragraphs.length > 0) {
+                paragraphs.forEach((p, idx) => {
+                    const stepCard = document.createElement("div");
+                    stepCard.className = "practice-step-card";
+                    stepCard.innerHTML = `
+                        <span style="
+                            background: var(--primary);
+                            color: white;
+                            font-weight: 700;
+                            border-radius: 50%;
+                            width: 1.75rem;
+                            height: 1.75rem;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 0.85rem;
+                            flex-shrink: 0;
+                        ">${idx + 1}</span>
+                        <div style="line-height: 1.6; font-size: 0.95rem; color: var(--text-primary);">${p.trim().replace(/^-\s*/, "")}</div>
+                    `;
+                    planContainer.appendChild(stepCard);
+                });
+            } else {
+                planContainer.innerHTML = "<p class='text-secondary'>No practice plan provided.</p>";
+            }
+
+            showScreen("scorecard");
+        }
+
+        // --- 3. EVENT LISTENERS SETUP ---
+        document.addEventListener("DOMContentLoaded", () => {
+            initConfig();
+
+            // Tab Controls
+            const tabUpload = document.getElementById("tab-upload");
+            const tabPaste = document.getElementById("tab-paste");
+            const uploadZone = document.getElementById("upload-zone");
+            const pasteZone = document.getElementById("paste-zone");
+            const resumeInput = document.getElementById("resume-input");
+            const resumeFile = document.getElementById("resume-file");
+            const fileStatus = document.getElementById("file-status");
+            const fileNameDisplay = document.getElementById("file-name-display");
+
+            tabUpload.addEventListener("click", () => {
+                tabUpload.style.background = "rgba(255,255,255,0.05)";
+                tabUpload.style.borderColor = "var(--card-border)";
+                tabUpload.style.color = "white";
+
+                tabPaste.style.background = "transparent";
+                tabPaste.style.borderColor = "transparent";
+                tabPaste.style.color = "var(--text-secondary)";
+
+                uploadZone.style.display = "block";
+                pasteZone.style.display = "none";
+            });
+
+            tabPaste.addEventListener("click", () => {
+                tabPaste.style.background = "rgba(255,255,255,0.05)";
+                tabPaste.style.borderColor = "var(--card-border)";
+                tabPaste.style.color = "white";
+
+                tabUpload.style.background = "transparent";
+                tabUpload.style.borderColor = "transparent";
+                tabUpload.style.color = "var(--text-secondary)";
+
+                uploadZone.style.display = "none";
+                pasteZone.style.display = "block";
+            });
+
+            // Drag and Drop File Handlers
+            uploadZone.addEventListener("click", () => resumeFile.click());
+
+            uploadZone.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                uploadZone.style.borderColor = "var(--primary)";
+                uploadZone.style.background = "rgba(139, 92, 246, 0.03)";
+            });
+
+            uploadZone.addEventListener("dragleave", () => {
+                uploadZone.style.borderColor = "rgba(255, 255, 255, 0.15)";
+                uploadZone.style.background = "rgba(255, 255, 255, 0.01)";
+            });
+
+            uploadZone.addEventListener("drop", (e) => {
+                e.preventDefault();
+                uploadZone.style.borderColor = "rgba(255, 255, 255, 0.15)";
+                uploadZone.style.background = "rgba(255, 255, 255, 0.01)";
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileSelect(files[0]);
+                }
+            });
+
+            resumeFile.addEventListener("change", (e) => {
+                if (e.target.files.length > 0) {
+                    handleFileSelect(e.target.files[0]);
+                }
+            });
+
+            async function handleFileSelect(file) {
+                fileStatus.style.display = "flex";
+                fileStatus.style.color = "var(--amber)";
+                fileStatus.querySelector("span").style.backgroundColor = "var(--amber)";
+                fileNameDisplay.textContent = `Reading ${file.name}...`;
+
+                try {
+                    let text = "";
+                    if (file.name.toLowerCase().endsWith(".pdf")) {
+                        text = await extractTextFromPDF(file);
+                    } else {
+                        text = await readTextFile(file);
+                    }
+
+                    resumeInput.value = text;
+                    fileStatus.style.color = "var(--emerald)";
+                    fileStatus.querySelector("span").style.backgroundColor = "var(--emerald)";
+                    fileNameDisplay.textContent = `${file.name} successfully loaded (${(file.size / 1024).toFixed(1)} KB)`;
+                } catch (err) {
+                    console.error(err);
+                    fileStatus.style.color = "var(--rose)";
+                    fileStatus.querySelector("span").style.backgroundColor = "var(--rose)";
+                    fileNameDisplay.textContent = `Error reading file: ${err.message}`;
+                }
+            }
+
+            function readTextFile(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = () => reject(new Error("Failed to read text file."));
+                    reader.readAsText(file);
+                });
+            }
+
+            async function extractTextFromPDF(file) {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let fullText = "";
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(" ");
+                    fullText += pageText + "\n";
+                }
+                return fullText;
+            }
+
+            // Start Btn
+            document.getElementById("btn-start").addEventListener("click", startInterview);
+
+            // Mic Toggle
+            document.getElementById("btn-mic").addEventListener("click", toggleRecording);
+
+            // Submit Btn
+            document.getElementById("btn-submit").addEventListener("click", submitAnswer);
+
+            // Restart Btn
+            document.getElementById("btn-restart").addEventListener("click", () => {
+                fileStatus.style.display = "none";
+                resumeFile.value = "";
+                resumeInput.value = "";
+                showScreen("setup");
+            });
+
+            // Toggle Audio Out
+            const voiceToggle = document.getElementById("toggle-voice-out");
+            voiceToggle.addEventListener("click", () => {
+                state.voiceOutputEnabled = !state.voiceOutputEnabled;
+                if (state.voiceOutputEnabled) {
+                    voiceToggle.classList.add("active");
+                } else {
+                    voiceToggle.classList.remove("active");
+                    window.speechSynthesis.cancel();
+                }
+            });
+
+            // Voice select change listener
+            const voiceSelect = document.getElementById("voice-select");
+            const apiWarning = document.getElementById("setup-api-warning");
+            
+            voiceSelect.addEventListener("change", () => {
+                const selectedValue = voiceSelect.value;
+                if (selectedValue === "gemini") {
+                    if (!state.geminiAvailable) {
+                        apiWarning.style.display = "block";
+                        voiceSelect.value = "browser";
+                        state.voiceProvider = "browser";
+                        state.voiceAdapter = new BrowserVoiceAdapter();
+                    } else {
+                        apiWarning.style.display = "none";
+                        state.voiceProvider = "gemini";
+                        state.voiceAdapter = new GeminiVoiceAdapter();
+                    }
+                } else {
+                    apiWarning.style.display = "none";
+                    state.voiceProvider = "browser";
+                    state.voiceAdapter = new BrowserVoiceAdapter();
+                }
+                updateVoiceBadge();
+            });
+        });
+    </script>
+</body>
+</html>
