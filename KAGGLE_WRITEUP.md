@@ -39,9 +39,9 @@ Three principles from the course shaped every decision:
 
 **Deterministic code decides; LLMs judge.** `evaluate_answer` returns a Pydantic-structured rubric (content quality, technical correctness, STAR structure, conciseness, JD relevance, each 1–5). The `route_next` node then applies **named threshold constants in code** (`config.py`) — e.g., conciseness ≤ 2 or > 250 words triggers `followup_shorten`; technical correctness ≤ 3 in technical mode triggers `followup_deeper`; a `SequenceMatcher` similarity > 80% against prior answers triggers `followup_rephrase` (catching candidates who recycle one canned story). Routing is reproducible and debuggable; the LLM never decides control flow. Speech statistics (filler-word counts, answer length) are likewise pure Python, not model calls.
 
-**The candidate's voice is the human-in-the-loop.** Each Q&A turn is a `RequestInput` pause/resume cycle on one ADK session — the course's HITL mechanism, repurposed so that the human input *is* the training data.
+**The candidate's voice is the human-in-the-loop.** Each QA turn is a `RequestInput` pause/resume cycle on one ADK session — the course's HITL mechanism, repurposed so that the human input *is* the training data.
 
-**Voice is a frontend adapter, not a graph concern.** The graph is text-only — fully testable in the ADK Playground and evaluable from traces. A FastAPI frontend handles all audio through a swappable `VoiceAdapter` (`VOICE_PROVIDER=gemini|browser`): Gemini-native TTS (`gemini-3.1-flash-tts-preview`) and multimodal STT for production quality, or the browser Web Speech API for free zero-latency development.
+**Voice is a frontend adapter, not a graph concern.** The graph is text-only — fully testable in the ADK Playground and evaluable from traces. A FastAPI frontend handles all audio through a swappable `VoiceAdapter`: gemini-native TTS (`gemini-2.5-flash-tts`) and multimodal STT for production quality, or the browser Web Speech API for free zero-latency development.
 
 ## 3. Course Concepts Demonstrated
 
@@ -63,7 +63,7 @@ Three principles from the course shaped every decision:
 
 **Speech recognition became the measured bottleneck.** Testing with a real RF-engineering resume, browser STT mangled domain vocabulary — "C-band spectrum" became *"sebum Spectrum"*, "O-RANs" became *"orems"* — and the evaluator was partly grading the speech model instead of the candidate. This measurement, not aesthetics, motivated the Gemini-native STT provider (verbatim transcription instruction preserving filler words, since downstream nodes count them) and an evaluator instruction to treat contextually nonsensical words charitably as transcription artifacts.
 
-**Generative TTS that answers instead of reads.** Sending raw questions to `gemini-3.1-flash-tts-preview` made it *respond* to them ("Tell me about **my** PhD research…"). Solution: a verbatim `contents=f"Say: {text}"` prefix forcing pure reading. Two further production details: browser autoplay locks solved with a synchronous `unlockVoice()` audio-context unlock on every user click, and **self-healing fallback** — any Gemini API failure at runtime swaps the adapter to browser Web Speech mid-session with a warning card, so the interview never dies.
+**Generative TTS that answers instead of reads.** Sending raw questions to `gemini-2.5-flash-tts` made it *respond* to them ("Tell me about **my** PhD research…"). Solution: a verbatim `contents=f"Say: {text}"` prefix forcing pure reading. Two further production details: browser autoplay locks solved with a synchronous `unlockVoice()` audio-context unlock on every user click, and **self-healing fallback** — any Gemini API failure at runtime swaps the adapter to browser Web Speech mid-session with a warning card, so the interview never dies.
 
 ## 5. Evaluation & Quality Flywheel
 
@@ -71,9 +71,9 @@ We defined **6 evaluation scenarios** simulating distinct candidate behaviors �
 
 | Metric | Score | Verifies |
 |---|---|---|
-| question_relevance | **5.00 / 5** | Questions target JD skills and the selected mode |
-| feedback_quality | **4.67 / 5** | Evaluations cite answer specifics; follow-up type matches the actual deficiency |
-| no_fabrication | **5.00 / 5** | Zero invented employers, projects, or metrics in rewritten answers |
+| question_relevance | **4.83 / 5** | Questions target JD skills and the selected mode |
+| feedback_quality | **4.33 / 5** | Evaluations cite answer specifics; follow-up type matches the actual deficiency |
+| no_fabrication | **4.83 / 5** | Zero invented employers, projects, or metrics in rewritten answers |
 | security_containment | **5.00 / 5** | PII redacted pre-LLM; injections flagged and provably ineffective on scores |
 
 ## 6. UX Highlights
