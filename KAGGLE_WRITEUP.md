@@ -2,7 +2,7 @@
 
 **Subtitle**: A Concierge Agent for realistic spoken interview practice — adaptive follow-ups, zero-trust input handling, verified no-fabrication coaching, and self-healing voice fallbacks
 **Track**: Concierge Agents (Safe & Secure Personal Assistants)
-**Public Project Link**: https://github.com/<YOUR_USERNAME>/interview-coach *(full setup instructions in README)*
+**Public Project Link**: https://github.com/amir-rf/interview-coach *(full setup instructions in README)*
 **Video**: *(YouTube link — attach in Media Gallery)*
 
 ---
@@ -83,7 +83,7 @@ Premium glassmorphic dark UI (Outfit/Inter typography); drag-and-drop PDF resume
 ## 7. Setup
 
 ```bash
-git clone https://github.com/<YOUR_USERNAME>/interview-coach.git && cd interview-coach
+git clone https://github.com/amir-rf/interview-coach.git && cd interview-coach
 uvx google-agents-cli setup && make install
 cp .env.example .env        # add GEMINI_API_KEY; VOICE_PROVIDER=gemini or browser
 make frontend               # → http://127.0.0.1:8090

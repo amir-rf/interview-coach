@@ -75,7 +75,7 @@ interview-coach/
 Prerequisites: Python 3.11+, [uv](https://docs.astral.sh/uv/), a [Gemini API key](https://aistudio.google.com/) (free tier works). Chrome recommended for browser-voice mode.
 
 ```bash
-git clone https://github.com/<YOUR_USERNAME>/interview-coach.git
+git clone https://github.com/amir-rf/interview-coach.git
 cd interview-coach
 
 # 1. Install the agents-cli toolchain (one-time) and project deps
